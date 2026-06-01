@@ -1,11 +1,19 @@
 [package]
 name = "skillpack"
-version = "1.0.0"
+version = "0.0.1"
 edition = "2021"
 
 [lib]
 name = "skillpack_core"
 path = "src/lib.rs"
+
+[[bin]]
+name = "skillpack"
+path = "src/main.rs"
+
+[[bin]]
+name = "spack"
+path = "src/bin/spack.rs"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
