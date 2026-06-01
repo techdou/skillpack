@@ -1,0 +1,31 @@
+{
+    "name":  "skillpack",
+    "version":  "1.0.0",
+    "description":  "",
+    "main":  "",
+    "scripts":  {
+                    "build":  "tsc \u0026\u0026 vite build",
+                    "dev":  "vite",
+                    "tauri":  "tauri"
+                },
+    "keywords":  [
+
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "type":  "commonjs",
+    "dependencies":  {
+                         "react":  "^19.2.6",
+                         "react-dom":  "^19.2.6",
+                         "react-router-dom":  "^7.16.0"
+                     },
+    "devDependencies":  {
+                            "@tauri-apps/api":  "^2.11.0",
+                            "@tauri-apps/cli":  "^2.11.2",
+                            "@types/react":  "^19.2.15",
+                            "@types/react-dom":  "^19.2.3",
+                            "@vitejs/plugin-react":  "^6.0.2",
+                            "typescript":  "^6.0.3",
+                            "vite":  "^8.0.14"
+                        }
+}
