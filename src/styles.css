@@ -116,10 +116,8 @@ select {
   padding: 0 6px 10px;
 }
 
-.sidebar-logo::before {
-  background: var(--accent);
-  border-radius: 5px;
-  content: "";
+.sidebar-logo img {
+  display: block;
   height: 18px;
   margin-right: 9px;
   width: 18px;

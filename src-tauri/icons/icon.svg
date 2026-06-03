@@ -1,4 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">
-  <rect width="128" height="128" rx="16" fill="#3b82f6"/>
-  <text x="64" y="80" text-anchor="middle" fill="white" font-size="64" font-family="sans-serif">S</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">SkillPack logo</title>
+  <desc id="desc">A compact package mark with layered skill cards and a command prompt chevron.</desc>
+  <defs>
+    <linearGradient id="sp-bg" x1="20" y1="14" x2="108" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#181817"/>
+      <stop offset="0.58" stop-color="#2f3b37"/>
+      <stop offset="1" stop-color="#17635a"/>
+    </linearGradient>
+    <linearGradient id="sp-accent" x1="42" y1="35" x2="92" y2="89" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7dd3fc"/>
+      <stop offset="1" stop-color="#86efac"/>
+    </linearGradient>
+    <filter id="sp-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#000000" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#sp-bg)"/>
+  <path d="M34 35.5C34 31.4 37.4 28 41.5 28h45c4.1 0 7.5 3.4 7.5 7.5v44.2c0 3.7-2.7 6.8-6.3 7.4L51 93.3c-4.6.8-8.8-2.8-8.8-7.4V63.7H34V35.5Z" fill="#ffffff" opacity="0.13"/>
+  <g filter="url(#sp-shadow)">
+    <path d="M39 36c0-4.4 3.6-8 8-8h42c4.4 0 8 3.6 8 8v42c0 4.4-3.6 8-8 8H47c-4.4 0-8-3.6-8-8V36Z" fill="#f7f7f4"/>
+    <path d="M31 50c0-4.4 3.6-8 8-8h42c4.4 0 8 3.6 8 8v42c0 4.4-3.6 8-8 8H39c-4.4 0-8-3.6-8-8V50Z" fill="#ffffff"/>
+    <path d="M31 50c0-4.4 3.6-8 8-8h42c4.4 0 8 3.6 8 8v42c0 4.4-3.6 8-8 8H39c-4.4 0-8-3.6-8-8V50Z" fill="url(#sp-accent)" opacity="0.14"/>
+  </g>
+  <path d="M49 61l13 10-13 10" fill="none" stroke="#181817" stroke-linecap="round" stroke-linejoin="round" stroke-width="7.5"/>
+  <path d="M67 82h19" fill="none" stroke="#17635a" stroke-linecap="round" stroke-width="7.5"/>
+  <path d="M48 48h25" fill="none" stroke="#181817" stroke-linecap="round" stroke-width="5" opacity="0.22"/>
 </svg>

@@ -54,6 +54,7 @@ function App() {
     <>
       <nav className="sidebar">
         <div className="sidebar-logo">
+          <img src="/logo.svg" alt="" aria-hidden="true" />
           Skill<span>Pack</span>
         </div>
         <div className="sidebar-nav">
