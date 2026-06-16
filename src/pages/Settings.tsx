@@ -1,15 +1,24 @@
-﻿import { useState, useEffect } from "react";
-import { configGet, configSet, type AppConfig } from "../lib/api";
+import { useState, useEffect } from "react";
+import { ErrorBanner, SuccessBanner } from "../components/Feedback";
+import {
+  appVersion,
+  configGet,
+  configUpdateSettings,
+  pickDirectory,
+  type AppConfig,
+} from "../lib/api";
 
 function Settings() {
   const [config, setConfig] = useState<AppConfig | null>(null);
+  const [version, setVersion] = useState("0.1.0");
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
 
   const load = async () => {
     try {
-      const c = await configGet();
+      const [c, v] = await Promise.all([configGet(), appVersion().catch(() => "0.1.0")]);
       setConfig(c);
+      setVersion(v);
     } catch (e) {
       setError(String(e));
     }
@@ -21,26 +30,45 @@ function Settings() {
     if (!config) return;
     setError(null);
     try {
-      await configSet(config);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      // Only persist the user-facing fields; packs/projects are preserved by
+      // the backend (config_update_settings), avoiding the whole-config
+      // overwrite footgun.
+      await configUpdateSettings({
+        packs_dir: config.packs_dir,
+        codex_config_path: config.codex_config_path,
+        default_targets: config.default_targets,
+      });
+      setSaved("Settings saved");
     } catch (e) {
       setError(String(e));
     }
   };
 
-  if (!config) return <div>Loading...</div>;
+  const choosePacksDir = async () => {
+    const selected = await pickDirectory();
+    if (selected && config) setConfig({ ...config, packs_dir: selected });
+  };
+
+  const chooseCodexConfigDir = async () => {
+    // config.toml lives inside a directory; we let the user pick the dir and
+    // append the filename if they didn't select a file ending in .toml.
+    const selected = await pickDirectory();
+    if (selected && config) {
+      const path = selected.toLowerCase().endsWith(".toml")
+        ? selected
+        : `${selected}\\config.toml`;
+      setConfig({ ...config, codex_config_path: path });
+    }
+  };
+
+  if (!config) return <div>Loading…</div>;
 
   return (
     <div>
       <div className="page-title">Settings</div>
 
-      {error && <div style={{ color: "var(--danger)", marginBottom: 12 }}>{error}</div>}
-      {saved && (
-        <div style={{ color: "var(--success)", marginBottom: 12, fontSize: 12 }}>
-          Settings saved
-        </div>
-      )}
+      <ErrorBanner error={error} />
+      <SuccessBanner message={saved} onDismiss={() => setSaved(null)} />
 
       <div className="card">
         <div className="section-header">
@@ -50,21 +78,31 @@ function Settings() {
           <label style={{ display: "block", fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>
             Skill Packs Directory
           </label>
-          <input
-            className="input"
-            value={config.packs_dir}
-            onChange={(e) => setConfig({ ...config, packs_dir: e.target.value })}
-          />
+          <div className="input-row">
+            <input
+              className="input"
+              value={config.packs_dir}
+              onChange={(e) => setConfig({ ...config, packs_dir: e.target.value })}
+            />
+            <button className="btn" onClick={choosePacksDir}>
+              Choose Folder
+            </button>
+          </div>
         </div>
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: "block", fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>
             Codex config.toml Path
           </label>
-          <input
-            className="input"
-            value={config.codex_config_path || ""}
-            onChange={(e) => setConfig({ ...config, codex_config_path: e.target.value || null })}
-          />
+          <div className="input-row">
+            <input
+              className="input"
+              value={config.codex_config_path || ""}
+              onChange={(e) => setConfig({ ...config, codex_config_path: e.target.value || null })}
+            />
+            <button className="btn" onClick={chooseCodexConfigDir}>
+              Choose Folder
+            </button>
+          </div>
         </div>
       </div>
 
@@ -73,12 +111,13 @@ function Settings() {
           <span className="section-title">Default Toolchains</span>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {["codex", "agents", "claude", "cursor"].map((t) => {
+          {["codex", "claude", "gemini"].map((t) => {
             const active = config.default_targets.includes(t);
             return (
               <button
                 key={t}
                 className={`btn btn-sm ${active ? "btn-primary" : ""}`}
+                aria-pressed={active}
                 onClick={() => {
                   const targets = active
                     ? config.default_targets.filter((x) => x !== t)
@@ -98,7 +137,7 @@ function Settings() {
           <span className="section-title">About</span>
         </div>
         <div className="card-meta">
-          SkillPack v1.0.0
+          SkillPack v{version}
           <br />
           AI Coding Skills Package Manager
           <br />

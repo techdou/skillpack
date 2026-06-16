@@ -9,7 +9,6 @@ pub struct PluginInfo {
     pub name: String,   // e.g. "vercel"
     pub source: String, // e.g. "openai-curated"
     pub enabled: bool,
-    pub skill_count: Option<usize>,
 }
 
 /// Get the default Codex config.toml path
@@ -53,7 +52,6 @@ pub fn list_plugins(config_path: &PathBuf) -> Result<Vec<PluginInfo>, String> {
                         name,
                         source,
                         enabled,
-                        skill_count: None, // filled later by scanner
                     });
                 }
             }

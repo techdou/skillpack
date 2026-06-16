@@ -1,4 +1,5 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { ErrorBanner, EmptyState, Pill } from "../components/Feedback";
 import {
   packList,
   skillLink,
@@ -19,6 +20,7 @@ function ProjectDetail({ projectPath, onBack }: Props) {
   const [linked, setLinked] = useState<SkillLinkInfo[]>([]);
   const [target, setTarget] = useState("codex");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const projectName = projectPath.split(/[\\/]/).pop() || projectPath;
 
   const load = async () => {
@@ -37,6 +39,8 @@ function ProjectDetail({ projectPath, onBack }: Props) {
       }
     } catch (e) {
       setError(String(e));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,15 +74,19 @@ function ProjectDetail({ projectPath, onBack }: Props) {
       <div className="page-title">{projectName}</div>
       <div className="card-meta" style={{ marginBottom: 20 }}>{projectPath}</div>
 
-      {error && <div style={{ color: "var(--danger)", marginBottom: 12 }}>{error}</div>}
+      <ErrorBanner error={error} />
 
       <div className="section-header">
         <span className="section-title">Target Toolchain</span>
-        <select className="select" value={target} onChange={(e) => setTarget(e.target.value)}>
-          <option value="codex">Codex (.codex/skills)</option>
-          <option value="agents">Claude Code (.agents/skills)</option>
+        <select
+          className="select"
+          aria-label="Target toolchain"
+          value={target}
+          onChange={(e) => setTarget(e.target.value)}
+        >
+          <option value="codex">Codex (.agents/skills)</option>
           <option value="claude">Claude (.claude/skills)</option>
-          <option value="cursor">Cursor (.cursor/skills)</option>
+          <option value="gemini">Gemini (.gemini/skills)</option>
         </select>
       </div>
 
@@ -94,6 +102,16 @@ function ProjectDetail({ projectPath, onBack }: Props) {
                 <span className="card-meta" style={{ marginLeft: 8 }}>
                   {l.pack} / {l.target_dir}
                 </span>
+                <Pill
+                  tone={l.link_type === "symlink" ? "ok" : "warn"}
+                  title={
+                    l.link_type === "symlink"
+                      ? "Live link — follows pack updates automatically"
+                      : "Copy — snapshot, refreshed on pack update"
+                  }
+                >
+                  {l.link_type === "symlink" ? "Symlink" : "Copy"}
+                </Pill>
               </div>
               <button
                 className="btn btn-sm btn-danger"
@@ -106,11 +124,13 @@ function ProjectDetail({ projectPath, onBack }: Props) {
         </div>
       )}
 
-      {packs.length === 0 ? (
-        <div className="empty-state">
-          <p>No skill packs installed</p>
-          <p style={{ fontSize: 12 }}>Go to Packs page to install a skill pack first</p>
-        </div>
+      {loading ? (
+        <div className="card-meta">Loading packs…</div>
+      ) : packs.length === 0 ? (
+        <EmptyState
+          title="No skill packs installed"
+          hint="Go to Packs page to install a skill pack first"
+        />
       ) : (
         packs.map(([packName, info]) => (
           <div key={packName} style={{ marginBottom: 16 }}>
@@ -125,6 +145,9 @@ function ProjectDetail({ projectPath, onBack }: Props) {
                   <label className="toggle">
                     <input
                       type="checkbox"
+                      role="switch"
+                      aria-checked={isLinked}
+                      aria-label={`Link ${skill} from ${packName}`}
                       checked={isLinked}
                       onChange={() => handleToggle(skill, packName, isLinked)}
                     />

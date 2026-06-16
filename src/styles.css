@@ -406,6 +406,15 @@ select {
   white-space: nowrap;
 }
 
+.skill-desc.wide {
+  max-width: min(760px, 70vw);
+}
+
+.skill-item-detail {
+  align-items: flex-start;
+  gap: 16px;
+}
+
 .plugin-row {
   align-items: center;
   display: flex;
@@ -510,6 +519,102 @@ select {
   color: var(--text);
 }
 
+.segmented {
+  align-items: center;
+  background: var(--bg-active);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+}
+
+.segmented button {
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--radius) - 2px);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  min-height: 26px;
+  padding: 4px 9px;
+}
+
+.segmented button.active {
+  background: var(--bg-panel);
+  color: var(--text);
+  font-weight: 650;
+}
+
+.root-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.root-card {
+  align-items: flex-start;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr auto;
+  min-height: 122px;
+  padding: 13px;
+  text-align: left;
+}
+
+.root-card:hover,
+.root-card.active {
+  background: var(--bg-panel-hover);
+  border-color: var(--border-strong);
+}
+
+.root-card.active {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.root-card-title {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.root-card-count,
+.root-card-path {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.root-card-path {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+
+.status-dot {
+  background: var(--danger);
+  border-radius: 999px;
+  height: 8px;
+  margin-top: 5px;
+  width: 8px;
+}
+
+.status-dot.ok {
+  background: var(--success);
+}
+
+.mono-path {
+  font-family:
+    "SF Mono",
+    "Cascadia Mono",
+    "JetBrains Mono",
+    Consolas,
+    monospace;
+}
+
 ::-webkit-scrollbar {
   height: 10px;
   width: 10px;
@@ -524,4 +629,127 @@ select {
   background-clip: content-box;
   border: 3px solid transparent;
   border-radius: 999px;
+}
+
+/* --------------------------------------------------------------------------
+ * Shared feedback components (ErrorBanner / SuccessBanner / Pill / EmptyState
+ * / ErrorBoundary). Token-based so dark mode adapts automatically.
+ * ------------------------------------------------------------------------ */
+
+.banner {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.banner-error {
+  color: var(--danger);
+  background: var(--danger-bg, rgba(220, 38, 38, 0.08));
+  border: 1px solid var(--danger-border, rgba(220, 38, 38, 0.25));
+}
+
+.banner-success {
+  color: var(--success);
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+}
+
+/* `--success-border` is the only banner token not defined upstream. */
+:root {
+  --success-border: rgba(22, 121, 76, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --success-border: rgba(134, 239, 172, 0.35);
+  }
+}
+
+.empty-state {
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  padding: 28px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-state-title {
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.empty-state-hint {
+  font-size: 12px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+
+.pill-ok {
+  color: var(--success);
+  background: var(--success-bg);
+  border-color: var(--success-border);
+}
+
+.pill-warn {
+  color: #b45309;
+  background: rgba(180, 83, 9, 0.12);
+  border-color: rgba(180, 83, 9, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  .pill-warn {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.14);
+    border-color: rgba(251, 191, 36, 0.35);
+  }
+}
+
+.clickable {
+  cursor: pointer;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.clickable:hover,
+.clickable:focus-visible {
+  border-color: var(--border-strong);
+}
+
+.placeholder-card {
+  opacity: 0.6;
+}
+
+.crash-screen {
+  max-width: 480px;
+  margin: 48px auto;
+  padding: 24px;
+  border: 1px solid var(--danger-border, rgba(220, 38, 38, 0.25));
+  border-radius: 8px;
+  background: var(--danger-bg, rgba(220, 38, 38, 0.05));
+}
+
+.crash-screen h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--danger);
+}
+
+.crash-message {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+  word-break: break-word;
 }

@@ -1,10 +1,12 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { ErrorBanner, EmptyState, SuccessBanner } from "../components/Feedback";
 import { pluginList, pluginToggle, type PluginEntry } from "../lib/api";
 
 function Plugins() {
   const [plugins, setPlugins] = useState<PluginEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [changed, setChanged] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = async () => {
     try {
@@ -12,6 +14,8 @@ function Plugins() {
       setPlugins(list);
     } catch (e) {
       setError(String(e));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -21,7 +25,7 @@ function Plugins() {
     setError(null);
     try {
       await pluginToggle(key, enabled);
-      setChanged(true);
+      setSuccess("Config updated. Restart Codex for changes to take effect.");
       await load();
     } catch (e) {
       setError(String(e));
@@ -37,22 +41,8 @@ function Plugins() {
         Codex config.toml plugin management
       </div>
 
-      {error && <div style={{ color: "var(--danger)", marginBottom: 12 }}>{error}</div>}
-
-      {changed && (
-        <div
-          style={{
-            color: "var(--success)",
-            marginBottom: 12,
-            padding: "8px 12px",
-            background: "rgba(34, 197, 94, 0.1)",
-            borderRadius: 6,
-            fontSize: 12,
-          }}
-        >
-          Config updated. Restart Codex for changes to take effect.
-        </div>
-      )}
+      <ErrorBanner error={error} />
+      <SuccessBanner message={success} onDismiss={() => setSuccess(null)} />
 
       <div className="section-header">
         <span className="section-title">
@@ -60,11 +50,13 @@ function Plugins() {
         </span>
       </div>
 
-      {plugins.length === 0 ? (
-        <div className="empty-state">
-          <p>No Codex plugins found</p>
-          <p style={{ fontSize: 12 }}>Make sure Codex Desktop is installed and config.toml exists</p>
-        </div>
+      {loading ? (
+        <div className="card-meta">Loading plugins…</div>
+      ) : plugins.length === 0 ? (
+        <EmptyState
+          title="No Codex plugins found"
+          hint="Make sure Codex Desktop is installed and config.toml exists"
+        />
       ) : (
         plugins.map((plugin) => (
           <div className="plugin-row" key={plugin.key}>
@@ -75,6 +67,9 @@ function Plugins() {
             <label className="toggle">
               <input
                 type="checkbox"
+                role="switch"
+                aria-checked={plugin.enabled}
+                aria-label={`${plugin.enabled ? "Disable" : "Enable"} plugin ${plugin.name}`}
                 checked={plugin.enabled}
                 onChange={(e) => handleToggle(plugin.key, e.target.checked)}
               />

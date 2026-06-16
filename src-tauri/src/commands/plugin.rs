@@ -1,4 +1,4 @@
-use crate::{config::AppConfig, toml_handler};
+use crate::{config::with_config, toml_handler};
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct PluginEntry {
@@ -8,14 +8,20 @@ pub struct PluginEntry {
     pub enabled: bool,
 }
 
+/// Resolve the Codex config.toml path from the saved config (falling back to
+/// the default discovery) under the global config lock.
+fn resolve_codex_config() -> Result<std::path::PathBuf, String> {
+    with_config(|config| {
+        config
+            .codex_config_path()
+            .or_else(toml_handler::get_codex_config_path)
+            .ok_or_else(|| "Codex config.toml not found".to_string())
+    })?
+}
+
 #[tauri::command]
 pub fn plugin_list() -> Result<Vec<PluginEntry>, String> {
-    let config = AppConfig::load()?;
-    let config_path = config
-        .codex_config_path()
-        .or_else(toml_handler::get_codex_config_path)
-        .ok_or("Codex config.toml not found")?;
-
+    let config_path = resolve_codex_config()?;
     let plugins = toml_handler::list_plugins(&config_path)?;
 
     Ok(plugins
@@ -31,13 +37,7 @@ pub fn plugin_list() -> Result<Vec<PluginEntry>, String> {
 
 #[tauri::command]
 pub fn plugin_toggle(key: String, enabled: bool) -> Result<(), String> {
-    let config = AppConfig::load()?;
-    let config_path = config
-        .codex_config_path()
-        .or_else(toml_handler::get_codex_config_path)
-        .ok_or("Codex config.toml not found")?;
-
+    let config_path = resolve_codex_config()?;
     toml_handler::toggle_plugin(&config_path, &key, enabled)?;
-
     Ok(())
 }

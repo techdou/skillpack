@@ -1,5 +1,13 @@
-﻿import { useState, useEffect } from "react";
-import { projectList, projectAdd, projectRemove, type ProjectInfo } from "../lib/api";
+import { useEffect, useState } from "react";
+import { ErrorBanner, EmptyState } from "../components/Feedback";
+import {
+  openPath,
+  pickDirectory,
+  projectAdd,
+  projectList,
+  projectRemove,
+  type ProjectInfo,
+} from "../lib/api";
 
 interface Props {
   onSelectProject: (path: string) => void;
@@ -7,8 +15,8 @@ interface Props {
 
 function Projects({ onSelectProject }: Props) {
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
-  const [newPath, setNewPath] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = async () => {
     try {
@@ -16,18 +24,29 @@ function Projects({ onSelectProject }: Props) {
       setProjects(list);
     } catch (e) {
       setError(String(e));
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => { load(); }, []);
 
   const handleAdd = async () => {
-    if (!newPath) return;
     setError(null);
     try {
-      await projectAdd(newPath);
-      setNewPath("");
+      const selected = await pickDirectory();
+      if (!selected) return;
+      await projectAdd(selected);
       await load();
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+
+  const handleOpen = async (path: string) => {
+    setError(null);
+    try {
+      await openPath(path);
     } catch (e) {
       setError(String(e));
     }
@@ -47,42 +66,53 @@ function Projects({ onSelectProject }: Props) {
     <div>
       <div className="page-title">Projects</div>
 
-      {error && <div style={{ color: "var(--danger)", marginBottom: 12 }}>{error}</div>}
+      <ErrorBanner error={error} />
 
       <div className="card">
         <div className="section-header">
           <span className="section-title">Add Project</span>
-        </div>
-        <div className="input-row">
-          <input
-            className="input"
-            placeholder="Project path (e.g. E:\my-paper-project)"
-            value={newPath}
-            onChange={(e) => setNewPath(e.target.value)}
-          />
-          <button className="btn btn-primary" onClick={handleAdd} disabled={!newPath}>
-            Add
+          <button className="btn btn-primary" onClick={handleAdd}>
+            Choose Folder
           </button>
+        </div>
+        <div className="card-meta">
+          Select a project folder with the system file manager. SkillPack will scan toolchain skill
+          folders under that project.
         </div>
       </div>
 
-      {projects.length === 0 ? (
-        <div className="empty-state">
-          <p>No projects registered</p>
-          <p style={{ fontSize: 12 }}>Add a project directory to start linking skills</p>
-        </div>
+      {loading ? (
+        <div className="card-meta">Loading projects…</div>
+      ) : projects.length === 0 ? (
+        <EmptyState
+          title="No projects registered"
+          hint="Choose a project directory to start linking skills"
+        />
       ) : (
         projects.map((proj) => (
           <div
-            className="card"
+            className="card clickable"
             key={proj.path}
-            style={{ cursor: "pointer" }}
+            role="button"
+            tabIndex={0}
             onClick={() => onSelectProject(proj.path)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectProject(proj.path);
+              }
+            }}
           >
             <div className="card-header">
               <span className="card-title">{proj.name}</span>
               <div style={{ display: "flex", gap: 6 }}>
                 <span className="badge badge-count">{proj.linked_skills_count} linked</span>
+                <button
+                  className="btn btn-sm"
+                  onClick={(e) => { e.stopPropagation(); handleOpen(proj.path); }}
+                >
+                  Open
+                </button>
                 <button
                   className="btn btn-sm btn-danger"
                   onClick={(e) => { e.stopPropagation(); handleRemove(proj.path); }}

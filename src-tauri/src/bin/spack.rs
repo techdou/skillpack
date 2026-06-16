@@ -53,13 +53,13 @@ fn get_arg<'a>(args: &'a [String], flag: &str) -> Option<&'a str> {
         .and_then(|i| args.get(i + 1).map(|s| s.as_str()))
 }
 
-fn get_pos_arg<'a>(args: &'a [String], after_subcmd: usize) -> Option<&'a str> {
+fn get_pos_arg(args: &[String], after_subcmd: usize) -> Option<&str> {
     // Find first positional arg after the subcommand and flags
     let subcmd_end = 2 + after_subcmd;
     if args.len() > subcmd_end {
-        for i in subcmd_end..args.len() {
-            if !args[i].starts_with('-') {
-                return Some(&args[i]);
+        for arg in args.iter().skip(subcmd_end) {
+            if !arg.starts_with('-') {
+                return Some(arg);
             }
         }
     }
@@ -67,7 +67,7 @@ fn get_pos_arg<'a>(args: &'a [String], after_subcmd: usize) -> Option<&'a str> {
 }
 
 fn print_usage() {
-    println!("SkillPack v1.0.0 - AI Coding Skills Package Manager");
+    println!("SkillPack v{} - AI Coding Skills Package Manager", skillpack_core::app_version());
     println!();
     println!("Commands:");
     println!("  install <url> --name <name> [--skill-root <path>]  Install a skill pack");
@@ -85,7 +85,7 @@ fn print_usage() {
     println!("  plugin list                                         List Codex plugins");
     println!("  plugin toggle <key> <on|off>                        Toggle Codex plugin");
     println!();
-    println!("Targets: codex, agents, claude, cursor");
+    println!("Targets: codex, agents, claude, gemini, cursor");
 }
 
 // --- Command implementations ---
@@ -119,7 +119,7 @@ fn cmd_list(args: &[String]) -> Result<(), String> {
         if packs.is_empty() {
             println!("No packs installed.");
         } else {
-            println!("{:<20} {:<10} {}", "PACK", "SKILLS", "SOURCE");
+            println!("{:<20} {:<10} SOURCE", "PACK", "SKILLS");
             for (name, pack) in &packs {
                 println!("{:<20} {:<10} {}", name, pack.skills.len(), pack.source);
             }
@@ -139,13 +139,18 @@ fn cmd_remove(args: &[String]) -> Result<(), String> {
 fn cmd_update(args: &[String]) -> Result<(), String> {
     let name = get_arg(args, "--name").map(|s| s.to_string());
     println!("Updating...");
-    let updated = skillpack_core::pack_update(name)?;
-    if updated.is_empty() {
+    let report = skillpack_core::pack_update(name)?;
+    if report.updated.is_empty() && report.failed.is_empty() {
         println!("Nothing to update.");
-    } else {
-        for n in &updated {
-            println!("  Updated: {}", n);
-        }
+    }
+    for n in &report.updated {
+        println!("  Updated: {}", n);
+    }
+    for fail in &report.failed {
+        println!("  Failed:  {} ({})", fail.pack, fail.error);
+    }
+    if !report.failed.is_empty() {
+        std::process::exit(1);
     }
     Ok(())
 }
@@ -163,8 +168,8 @@ fn cmd_link(args: &[String]) -> Result<(), String> {
         "Linking {} from {} to {} ({})...",
         skill_name, pack, project, target
     );
-    skillpack_core::skill_link(project, skill_name.to_string(), pack, target)?;
-    println!("Linked.");
+    let link_type = skillpack_core::skill_link(project, skill_name.to_string(), pack, target)?;
+    println!("Linked ({}).", link_type);
     Ok(())
 }
 
@@ -200,7 +205,7 @@ fn cmd_project(args: &[String]) -> Result<(), String> {
             if projects.is_empty() {
                 println!("No projects registered.");
             } else {
-                println!("{:<30} {:<10} {}", "NAME", "LINKED", "PATH");
+                println!("{:<30} {:<10} PATH", "NAME", "LINKED");
                 for p in &projects {
                     println!("{:<30} {:<10} {}", p.name, p.linked_skills_count, p.path);
                 }
@@ -219,7 +224,7 @@ fn cmd_plugin(args: &[String]) -> Result<(), String> {
             if plugins.is_empty() {
                 println!("No Codex plugins found.");
             } else {
-                println!("{:<40} {:<8} {}", "PLUGIN", "STATUS", "SOURCE");
+                println!("{:<40} {:<8} SOURCE", "PLUGIN", "STATUS");
                 for p in &plugins {
                     let status = if p.enabled { "ON" } else { "OFF" };
                     println!("{:<40} {:<8} {}", p.key, status, p.source);

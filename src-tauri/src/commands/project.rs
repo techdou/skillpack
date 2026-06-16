@@ -1,4 +1,4 @@
-use crate::config::AppConfig;
+use crate::config::{with_config, with_config_mut, AppConfig};
 use std::path::PathBuf;
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -18,86 +18,88 @@ pub fn project_add(path: String) -> Result<ProjectInfo, String> {
     let canonical_path = AppConfig::canonical_project_key(&path)?;
     let project_dir = PathBuf::from(&canonical_path);
 
-    let mut config = AppConfig::load()?;
+    let canonical_for_insert = canonical_path.clone();
+    with_config_mut(|config| -> Result<(), String> {
+        if config.projects.contains_key(&canonical_for_insert) {
+            return Err(format!(
+                "Project '{}' already registered",
+                canonical_for_insert
+            ));
+        }
 
-    if config.projects.contains_key(&canonical_path) {
-        return Err(format!("Project '{}' already registered", canonical_path));
-    }
+        let targets: std::collections::HashMap<String, String> = config
+            .default_targets
+            .iter()
+            .map(|t| (t.clone(), AppConfig::target_to_dir(t).to_string()))
+            .collect();
 
+        config.projects.insert(
+            canonical_for_insert.clone(),
+            crate::config::ProjectConfig {
+                targets,
+                links: std::collections::HashMap::new(),
+            },
+        );
+        Ok(())
+    })?;
+
+    // Build the response from the freshly-saved config.
     let name = project_dir
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| "unnamed".into());
-
-    config.projects.insert(
-        canonical_path.clone(),
-        crate::config::ProjectConfig {
-            targets: {
-                let mut m = std::collections::HashMap::new();
-                for target in &config.default_targets {
-                    m.insert(target.clone(), AppConfig::target_to_dir(target).to_string());
-                }
-                m
-            },
-            links: std::collections::HashMap::new(),
-        },
-    );
-
-    config.save()?;
-
-    Ok(ProjectInfo {
-        path: canonical_path,
-        name,
-        linked_skills_count: 0,
-        targets: config.default_targets.clone(),
-    })
+    with_config(|config| {
+        Ok(ProjectInfo {
+            path: canonical_path,
+            name,
+            linked_skills_count: 0,
+            targets: config.default_targets.clone(),
+        })
+    })?
 }
 
 #[tauri::command]
 pub fn project_remove(path: String) -> Result<(), String> {
-    let mut config = AppConfig::load()?;
     let project_key = AppConfig::canonical_project_key(&path).unwrap_or(path);
 
-    // Remove all skill links for this project
-    if let Some(proj_config) = config.projects.get(&project_key) {
-        let project_dir = PathBuf::from(&project_key);
-        for (skill_name, link_info) in &proj_config.links {
-            let target_rel = AppConfig::target_to_dir(&link_info.target);
-            let project_skills_dir = project_dir.join(target_rel);
-            let _ = crate::symlink::remove_skill_link(&project_skills_dir, skill_name);
+    with_config_mut(|config| -> Result<(), String> {
+        // Remove all skill links for this project.
+        if let Some(proj_config) = config.projects.get(&project_key) {
+            let project_dir = PathBuf::from(&project_key);
+            for (skill_name, link_info) in &proj_config.links {
+                let target_rel = AppConfig::target_to_dir(&link_info.target);
+                let project_skills_dir = project_dir.join(target_rel);
+                let _ = crate::symlink::remove_skill_link(&project_skills_dir, skill_name);
+            }
         }
-    }
 
-    config.projects.remove(&project_key);
-    config.save()?;
-
-    Ok(())
+        config.projects.remove(&project_key);
+        Ok(())
+    })
 }
 
 #[tauri::command]
 pub fn project_list() -> Result<Vec<ProjectInfo>, String> {
-    let config = AppConfig::load()?;
+    with_config(|config| {
+        config
+            .projects
+            .iter()
+            .map(|(path, proj_config)| {
+                let project_dir = PathBuf::from(path);
+                let name = project_dir
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| "unnamed".into());
 
-    let projects: Vec<ProjectInfo> = config
-        .projects
-        .iter()
-        .map(|(path, proj_config)| {
-            let project_dir = PathBuf::from(path);
-            let name = project_dir
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_else(|| "unnamed".into());
-
-            ProjectInfo {
-                path: path.clone(),
-                name,
-                linked_skills_count: proj_config.links.len(),
-                targets: proj_config.targets.keys().cloned().collect(),
-            }
-        })
-        .collect();
-
-    Ok(projects)
+                ProjectInfo {
+                    path: path.clone(),
+                    name,
+                    linked_skills_count: proj_config.links.len(),
+                    targets: proj_config.targets.keys().cloned().collect(),
+                }
+            })
+            .collect::<Vec<_>>()
+    })
 }
 
 #[cfg(test)]

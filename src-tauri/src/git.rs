@@ -90,17 +90,3 @@ pub fn pull_repo(repo_path: &Path) -> Result<String, String> {
 
     Ok(msg)
 }
-
-/// Get the current HEAD commit hash
-#[allow(dead_code)]
-pub fn get_head_hash(repo_path: &Path) -> Result<String, String> {
-    let repo =
-        Repository::open(repo_path).map_err(|e| format!("Failed to open repo: {}", e.message()))?;
-    let head = repo
-        .head()
-        .map_err(|e| format!("Failed to get HEAD: {}", e.message()))?;
-    let commit = head
-        .peel_to_commit()
-        .map_err(|e| format!("Failed to peel commit: {}", e.message()))?;
-    Ok(format!("{}", commit.id()))
-}

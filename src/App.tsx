@@ -1,11 +1,13 @@
-﻿import { useState } from "react";
+import { useState } from "react";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import Packs from "./pages/Packs";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import Plugins from "./pages/Plugins";
+import Skills from "./pages/Skills";
 import Settings from "./pages/Settings";
 
-type Page = "packs" | "projects" | "project-detail" | "plugins" | "settings";
+type Page = "packs" | "projects" | "project-detail" | "skills" | "plugins" | "settings";
 
 interface AppState {
   page: Page;
@@ -28,6 +30,11 @@ const icons = {
       <path d="M1 8a7 7 0 1 1 2.878 5.674l-.726.727a1 1 0 0 1-1.414-1.414l.727-.727A7 7 0 0 1 1 8zm7-4a.75.75 0 0 1 .75.75v2.5h2.5a.75.75 0 0 1 0 1.5h-2.5v2.5a.75.75 0 0 1-1.5 0v-2.5h-2.5a.75.75 0 0 1 0-1.5h2.5v-2.5A.75.75 0 0 1 8 4z" />
     </svg>
   ),
+  skills: (
+    <svg viewBox="0 0 16 16" fill="currentColor">
+      <path d="M3 2.5A1.5 1.5 0 0 1 4.5 1h7A1.5 1.5 0 0 1 13 2.5v11A1.5 1.5 0 0 1 11.5 15h-7A1.5 1.5 0 0 1 3 13.5v-11zm2.25 3a.75.75 0 0 0 0 1.5h5.5a.75.75 0 0 0 0-1.5h-5.5zm0 3a.75.75 0 0 0 0 1.5h5.5a.75.75 0 0 0 0-1.5h-5.5z" />
+    </svg>
+  ),
   settings: (
     <svg viewBox="0 0 16 16" fill="currentColor">
       <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z" />
@@ -46,6 +53,7 @@ function App() {
   const navItems: { key: Page; label: string }[] = [
     { key: "packs", label: "Packs" },
     { key: "projects", label: "Projects" },
+    { key: "skills", label: "Skills" },
     { key: "plugins", label: "Plugins" },
     { key: "settings", label: "Settings" },
   ];
@@ -72,18 +80,21 @@ function App() {
       </nav>
 
       <main className="main">
-        {state.page === "packs" && <Packs />}
-        {state.page === "projects" && (
-          <Projects onSelectProject={(path) => navigate("project-detail", path)} />
-        )}
-        {state.page === "project-detail" && state.selectedProject && (
-          <ProjectDetail
-            projectPath={state.selectedProject}
-            onBack={() => navigate("projects")}
-          />
-        )}
-        {state.page === "plugins" && <Plugins />}
-        {state.page === "settings" && <Settings />}
+        <ErrorBoundary>
+          {state.page === "packs" && <Packs />}
+          {state.page === "projects" && (
+            <Projects onSelectProject={(path) => navigate("project-detail", path)} />
+          )}
+          {state.page === "project-detail" && state.selectedProject && (
+            <ProjectDetail
+              projectPath={state.selectedProject}
+              onBack={() => navigate("projects")}
+            />
+          )}
+          {state.page === "skills" && <Skills />}
+          {state.page === "plugins" && <Plugins />}
+          {state.page === "settings" && <Settings />}
+        </ErrorBoundary>
       </main>
     </>
   );

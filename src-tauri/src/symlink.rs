@@ -53,7 +53,7 @@ pub fn create_skill_link(
 pub fn remove_skill_link(project_skills_dir: &Path, skill_name: &str) -> Result<(), String> {
     let link_path = project_skills_dir.join(skill_name);
 
-    if !link_path.exists() && !link_path.symlink_metadata().is_ok() {
+    if !link_path.exists() && link_path.symlink_metadata().is_err() {
         return Err(format!("Skill link not found: {}", skill_name));
     }
 
