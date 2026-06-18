@@ -79,6 +79,32 @@ export interface UpdateReport {
   failed: { pack: string; error: string }[];
 }
 
+/**
+ * A curated pack entry from the registry. `source` + `skill_root` map directly
+ * onto `packInstall`, so installing a featured pack reuses the same code path
+ * as a manual URL install.
+ *
+ * `installed` is derived on the client: it's true when a pack with the same
+ * `name` already appears in `packList()`.
+ */
+export interface FeaturedPack {
+  id: string;
+  name: string;
+  source: string;
+  skill_root?: string;
+  description: string;
+  author?: string;
+  homepage?: string;
+  category?: string;
+  tags: string[];
+  license?: string;
+  featured: boolean;
+  featured_rank: number;
+  verified: boolean;
+  /** Derived client-side: whether a pack with this name is already installed. */
+  installed?: boolean;
+}
+
 /** Field-scoped settings payload (only these are user-editable from the UI). */
 export interface SettingsUpdate {
   packs_dir: string;
@@ -98,6 +124,59 @@ const defaultConfig = (): AppConfig => ({
   codex_config_path: "~/.codex/config.toml",
 });
 
+/**
+ * Sample featured packs for the non-Tauri preview (browser `npm run dev`),
+ * so the Featured grid renders out of the box during frontend development.
+ * Mirrors the Rust fallback_manifest shape.
+ */
+const previewFeaturedPacks = (): FeaturedPack[] => [
+  {
+    id: "superpowers",
+    name: "Superpowers",
+    source: "https://github.comobra/superpowers",
+    skill_root: "skills",
+    description: "Engineering workflow skills: TDD, systematic debugging, code review, planning, and subagent orchestration.",
+    author: "obra",
+    homepage: "https://github.comobra/superpowers",
+    category: "engineering",
+    tags: ["tdd", "debug", "review"],
+    license: "MIT",
+    featured: true,
+    featured_rank: 1,
+    verified: true,
+  },
+  {
+    id: "skillpack-nature-academic",
+    name: "Nature Academic",
+    source: "https://github.com/techdou/skillpack-nature",
+    skill_root: "skills",
+    description: "Academic research and writing: literature search, citation, figures, data handling, paper-to-PPT, and response drafting.",
+    author: "techdou",
+    homepage: "https://github.com/techdou/skillpack-nature",
+    category: "academic",
+    tags: ["research", "writing", "citation"],
+    license: "MIT",
+    featured: true,
+    featured_rank: 2,
+    verified: true,
+  },
+  {
+    id: "skillpack-lark",
+    name: "Lark Suite",
+    source: "https://github.com/techdou/skillpack-lark",
+    skill_root: "skills",
+    description: "Feishu/Lark automation: docs, sheets, base, calendar, approval flows, and meeting summaries.",
+    author: "techdou",
+    homepage: "https://github.com/techdou/skillpack-lark",
+    category: "productivity",
+    tags: ["feishu", "automation", "office"],
+    license: "MIT",
+    featured: true,
+    featured_rank: 3,
+    verified: true,
+  },
+];
+
 const invokeOrPreview = async <T,>(command: string, args?: Record<string, unknown>): Promise<T> => {
   if (isTauriRuntime()) {
     return invoke<T>(command, args);
@@ -113,6 +192,10 @@ const invokeOrPreview = async <T,>(command: string, args?: Record<string, unknow
     case "project_skill_roots":
     case "project_skills":
       return [] as T;
+    case "featured_list":
+      return previewFeaturedPacks() as T;
+    case "featured_refresh":
+      return previewFeaturedPacks() as T;
     case "config_get":
       return defaultConfig() as T;
     case "app_version":
@@ -139,6 +222,14 @@ export const packRemove = (name: string) =>
 
 export const packUpdate = (name?: string) =>
   invokeOrPreview<UpdateReport>("pack_update", { name });
+
+/** Curated featured packs from the registry. */
+export const featuredList = () =>
+  invokeOrPreview<FeaturedPack[]>("featured_list");
+
+/** Force-refresh the registry cache and return the new featured list. */
+export const featuredRefresh = () =>
+  invokeOrPreview<FeaturedPack[]>("featured_refresh");
 
 /** Returns the link type ("symlink" | "copy") so the UI can warn about copies. */
 export const skillLink = (project: string, skillName: string, pack: string, target: string) =>

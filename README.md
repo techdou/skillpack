@@ -10,7 +10,12 @@ them.
 
 ## Features
 
-- **Install** packs from a Git URL or a local directory
+- **Discover** curated **Featured Packs** on the Packs page — one-click
+  install with no URL needed. The catalog is fetched from a registry Git repo
+  and cached at `~/.skillpack/registry-cache/`; if the network or registry is
+  unreachable an embedded fallback list still keeps the grid populated, so the
+  first run is never blank. Force a refresh with the *Refresh* button
+- **Install** packs from a Git URL, a local directory, or the Featured grid
 - **Update** packs (fast-forward `git pull`) — one unreachable remote no longer
   aborts the rest; results come back as `{ updated, failed }`
 - **Link** skills into a project per toolchain; links are materialized as
@@ -47,6 +52,10 @@ SkillPack keeps all state in `~/.skillpack/config.json` (override with the
 fields (`packs_dir`, `codex_config_path`, `default_targets`) via
 `config_update_settings` — packs and projects entries are never overwritten,
 which prevents a stale frontend from clobbering the registry.
+
+The Featured Packs catalog is cloned into `~/.skillpack/registry-cache/`. Point
+SkillPack at a different registry repo (mirror, air-gapped, or local) with the
+`SKILLPACK_REGISTRY_URL` env var.
 
 ## CLI
 

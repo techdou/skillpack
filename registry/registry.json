@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-06-19T00:00:00Z",
+  "packs": [
+    {
+      "id": "superpowers",
+      "name": "Superpowers",
+      "source": "https://github.comobra/superpowers",
+      "skill_root": "skills",
+      "description": "Engineering workflow skills: TDD, systematic debugging, code review, planning, and subagent orchestration.",
+      "author": "obra",
+      "homepage": "https://github.comobra/superpowers",
+      "category": "engineering",
+      "tags": ["tdd", "debug", "review"],
+      "license": "MIT",
+      "featured": true,
+      "featured_rank": 1,
+      "verified": true
+    },
+    {
+      "id": "skillpack-nature-academic",
+      "name": "Nature Academic",
+      "source": "https://github.com/techdou/skillpack-nature",
+      "skill_root": "skills",
+      "description": "Academic research and writing: literature search, citation, figures, data handling, paper-to-PPT, and response drafting.",
+      "author": "techdou",
+      "homepage": "https://github.com/techdou/skillpack-nature",
+      "category": "academic",
+      "tags": ["research", "writing", "citation"],
+      "license": "MIT",
+      "featured": true,
+      "featured_rank": 2,
+      "verified": true
+    },
+    {
+      "id": "skillpack-lark",
+      "name": "Lark Suite",
+      "source": "https://github.com/techdou/skillpack-lark",
+      "skill_root": "skills",
+      "description": "Feishu/Lark automation: docs, sheets, base, calendar, approval flows, and meeting summaries.",
+      "author": "techdou",
+      "homepage": "https://github.com/techdou/skillpack-lark",
+      "category": "productivity",
+      "tags": ["feishu", "automation", "office"],
+      "license": "MIT",
+      "featured": true,
+      "featured_rank": 3,
+      "verified": true
+    },
+    {
+      "id": "skillpack-documents",
+      "name": "Documents",
+      "source": "https://github.com/techdou/skillpack-documents",
+      "skill_root": "skills",
+      "description": "Create and edit PDF, DOCX, PPTX, and XLSX files programmatically.",
+      "author": "techdou",
+      "homepage": "https://github.com/techdou/skillpack-documents",
+      "category": "productivity",
+      "tags": ["pdf", "docx", "pptx", "xlsx"],
+      "license": "MIT",
+      "featured": true,
+      "featured_rank": 4,
+      "verified": true
+    },
+    {
+      "id": "skillpack-multimedia",
+      "name": "Multimedia",
+      "source": "https://github.com/techdou/skillpack-multimedia",
+      "skill_root": "skills",
+      "description": "Video and animation tooling: whiteboard animation, Remotion rendering, and AIGC illustration.",
+      "author": "techdou",
+      "homepage": "https://github.com/techdou/skillpack-multimedia",
+      "category": "creative",
+      "tags": ["video", "animation", "illustration"],
+      "license": "MIT",
+      "featured": true,
+      "featured_rank": 5,
+      "verified": false
+    }
+  ]
+}

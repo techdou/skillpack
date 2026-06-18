@@ -42,6 +42,14 @@ pub fn pack_update(name: Option<String>) -> Result<commands::pack::UpdateReport,
     commands::pack::pack_update(name)
 }
 
+pub fn featured_list() -> Result<Vec<commands::featured::FeaturedPack>, String> {
+    commands::featured::featured_list()
+}
+
+pub fn featured_refresh() -> Result<Vec<commands::featured::FeaturedPack>, String> {
+    commands::featured::featured_refresh()
+}
+
 pub fn skill_link(
     project: String,
     skill_name: String,

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { ErrorBanner, EmptyState, SuccessBanner } from "../components/Feedback";
 import {
+  featuredList,
+  featuredRefresh,
   packInstall,
   packInstallLocal,
   packList,
@@ -8,11 +10,13 @@ import {
   packRemove,
   packUpdate,
   pickDirectory,
+  type FeaturedPack,
   type PackInfo,
 } from "../lib/api";
 
 function Packs() {
   const [packs, setPacks] = useState<[string, PackInfo][]>([]);
+  const [featured, setFeatured] = useState<FeaturedPack[]>([]);
   const [installMode, setInstallMode] = useState<"git" | "local">("git");
   const [url, setUrl] = useState("");
   const [localDir, setLocalDir] = useState("");
@@ -20,11 +24,15 @@ function Packs() {
   const [skillRoot, setSkillRoot] = useState("");
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
+  /** Pack names currently being installed from the Featured grid. */
+  const [installingFeatured, setInstallingFeatured] = useState<Set<string>>(new Set());
 
-  const load = async () => {
+  const loadPacks = async () => {
     try {
       const list = await packList();
       setPacks(list);
@@ -35,7 +43,24 @@ function Packs() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  const loadFeatured = async () => {
+    try {
+      const list = await featuredList();
+      setFeatured(list);
+    } catch {
+      // featured_list already falls back to an embedded catalog on the backend;
+      // a JS-level failure here just leaves the grid hidden rather than crashing.
+    } finally {
+      setFeaturedLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPacks();
+    loadFeatured();
+  }, []);
+
+  const installedNames = new Set(packs.map(([n]) => n));
 
   const chooseLocalPack = async () => {
     setError(null);
@@ -75,7 +100,7 @@ function Packs() {
       setLocalDir("");
       setName("");
       setSkillRoot("");
-      await load();
+      await loadPacks();
     } catch (e) {
       setError(String(e));
     } finally {
@@ -87,7 +112,7 @@ function Packs() {
     if (!confirm(`Remove pack "${packName}" and all its project links?`)) return;
     try {
       await packRemove(packName);
-      await load();
+      await loadPacks();
     } catch (e) {
       setError(String(e));
     }
@@ -98,7 +123,7 @@ function Packs() {
     setError(null);
     try {
       const report = await packUpdate(packName);
-      await load();
+      await loadPacks();
       const parts: string[] = [];
       if (report.updated.length) parts.push(`Updated: ${report.updated.join(", ")}`);
       if (report.failed.length) {
@@ -123,12 +148,100 @@ function Packs() {
     }
   };
 
+  /** Install a featured pack by reusing the standard pack_install path. */
+  const handleInstallFeatured = async (fp: FeaturedPack) => {
+    setError(null);
+    setSuccess(null);
+    setInstallingFeatured((prev) => new Set(prev).add(fp.name));
+    try {
+      await packInstall(fp.source, fp.name, fp.skill_root || undefined);
+      await loadPacks();
+      setSuccess(`Installed "${fp.name}".`);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setInstallingFeatured((prev) => {
+        const next = new Set(prev);
+        next.delete(fp.name);
+        return next;
+      });
+    }
+  };
+
+  /** Force-refresh the registry and swap in the new featured list. */
+  const handleRefreshFeatured = async () => {
+    setRefreshing(true);
+    setError(null);
+    try {
+      const list = await featuredRefresh();
+      setFeatured(list);
+      setSuccess("Featured catalog refreshed.");
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <div>
       <div className="page-title">Skill Packs</div>
 
       <ErrorBanner error={error} />
       <SuccessBanner message={success} onDismiss={() => setSuccess(null)} />
+
+      {/* Featured Packs — discovery layer, always present (backend falls back
+          to an embedded catalog, so this grid is never blank). */}
+      {!featuredLoading && featured.length > 0 && (
+        <div className="featured-section">
+          <div className="section-header">
+            <div>
+              <span className="section-title">★ Featured Packs</span>
+              <div className="featured-section-hint">
+                Curated packs — install with one click, no URL needed.
+              </div>
+            </div>
+            <button
+              className="btn btn-sm"
+              onClick={handleRefreshFeatured}
+              disabled={refreshing}
+            >
+              {refreshing ? "Refreshing…" : "Refresh"}
+            </button>
+          </div>
+          <div className="featured-grid">
+            {featured.map((fp) => {
+              const isInstalled = installedNames.has(fp.name);
+              const isInstalling = installingFeatured.has(fp.name);
+              return (
+                <div className="featured-card" key={fp.id}>
+                  <div className="featured-card-head">
+                    <span className="featured-card-name">{fp.name}</span>
+                    {fp.verified && (
+                      <span className="pill pill-ok" title="Verified author">✓ Verified</span>
+                    )}
+                  </div>
+                  <div className="featured-card-desc">{fp.description}</div>
+                  <div className="featured-card-meta">
+                    {fp.category && <span>{fp.category}</span>}
+                    {fp.license && <span>· {fp.license}</span>}
+                    {fp.author && <span>· {fp.author}</span>}
+                  </div>
+                  <button
+                    className={`btn btn-sm ${isInstalled ? "" : "btn-primary"}`}
+                    onClick={() =>
+                      !isInstalled && !isInstalling && handleInstallFeatured(fp)
+                    }
+                    disabled={isInstalled || isInstalling}
+                  >
+                    {isInstalled ? "✓ Installed" : isInstalling ? "Installing…" : "Install"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="section-header">
@@ -206,7 +319,7 @@ function Packs() {
       ) : packs.length === 0 ? (
         <EmptyState
           title="No packs installed yet"
-          hint="Install a skill pack from Git or a local directory"
+          hint="Install a featured pack above, or add one from a Git URL or local directory."
         />
       ) : (
         <>

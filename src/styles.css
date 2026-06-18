@@ -753,3 +753,81 @@ select {
   margin: 0 0 16px;
   word-break: break-word;
 }
+
+/* --------------------------------------------------------------------------
+ * Featured Packs discovery grid (Packs page).
+ * ------------------------------------------------------------------------ */
+
+.featured-section {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  padding: 16px;
+}
+
+.featured-section-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.featured-grid {
+  display: grid;
+  gap: 14px;
+  /* Cards grow to fill rows; 240px is the comfortable minimum that fits the
+     name + 2-line description + meta + button without crowding. */
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  margin-top: 14px;
+}
+
+.featured-card {
+  align-items: stretch;
+  background: var(--bg-control);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.featured-card:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-panel-hover);
+}
+
+.featured-card-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.featured-card-name {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.featured-card-desc {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.featured-card-meta {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.featured-card .btn {
+  align-self: flex-end;
+  margin-top: 4px;
+}
