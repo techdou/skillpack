@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
+mod codex;
 mod config;
 mod error;
 mod git;
@@ -26,7 +27,20 @@ fn main() {
             commands::project::project_remove,
             commands::project::project_list,
             commands::plugin::plugin_list,
+            commands::plugin::plugin_overview,
             commands::plugin::plugin_toggle,
+            commands::plugin::plugin_add,
+            commands::plugin::plugin_remove,
+            commands::plugin::features_plugins_status,
+            commands::plugin::features_plugins_toggle,
+            commands::plugin::marketplace_list,
+            commands::plugin::marketplace_add,
+            commands::plugin::marketplace_upgrade,
+            commands::plugin::marketplace_remove,
+            commands::mcp::mcp_list,
+            commands::mcp::mcp_toggle,
+            commands::mcp::mcp_remove,
+            commands::mcp::mcp_add,
             commands::skills::toolchain_skill_roots,
             commands::skills::toolchain_skills,
             commands::skills::project_skill_roots,

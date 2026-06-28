@@ -9,12 +9,8 @@ use std::io;
 
 /// Categorised error type. Kept deliberately small; each variant carries the
 /// contextual information useful for both logging and user-facing messages.
-///
-/// Currently used as the structured foundation for future per-command error
-/// reporting; existing commands still return `Result<T, String>` and convert
-/// via `Display`. Suppress dead-code warnings until command sites adopt it.
-#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum SkillError {
     #[error("IO error: {0}")]
     Io(#[from] io::Error),

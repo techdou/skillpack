@@ -1,9 +1,11 @@
 pub mod commands;
+pub mod codex;
 pub mod config;
 pub mod error;
 pub mod git;
 pub mod scanner;
 pub mod symlink;
+#[allow(deprecated)]
 pub mod toml_handler;
 
 // Re-export command functions for CLI usage. These thin wrappers let the
