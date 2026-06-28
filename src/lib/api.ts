@@ -47,10 +47,56 @@ export interface SkillEntry {
 }
 
 export interface PluginEntry {
+  /** Full config key, e.g. `vercel@openai-curated`. */
   key: string;
+  /** Plugin name, the part before `@`. */
   name: string;
+  /** Marketplace / source name, the part after `@`. */
   source: string;
   enabled: boolean;
+  /** Whether the cache directory exists for this plugin. */
+  installed: boolean;
+  version?: string;
+  description?: string;
+  category?: string;
+  author_name?: string;
+  capabilities: string[];
+  bundled_skills: string[];
+  installed_path?: string;
+}
+
+/** Master switch + plugins, fetched in one round-trip. */
+export interface PluginOverview {
+  features_plugins_enabled: boolean;
+  plugins: PluginEntry[];
+}
+
+/** A configured marketplace from `[marketplaces.*]`. */
+export interface MarketplaceEntry {
+  name: string;
+  source?: string;
+  ref?: string;
+  path?: string;
+}
+
+/** A top-level `[mcp_servers.*]` entry. */
+export interface McpServerEntry {
+  name: string;
+  command?: string;
+  args: string[];
+  url?: string;
+  type?: string;
+  env_keys: string[];
+  enabled: boolean;
+}
+
+/** Payload for adding an MCP server. */
+export interface McpAdd {
+  name: string;
+  type?: string;
+  command?: string;
+  args: string[];
+  url?: string;
 }
 
 export interface ProjectLink {
@@ -191,7 +237,13 @@ const invokeOrPreview = async <T,>(command: string, args?: Record<string, unknow
     case "toolchain_skills":
     case "project_skill_roots":
     case "project_skills":
+    case "marketplace_list":
+    case "mcp_list":
       return [] as T;
+    case "plugin_overview":
+      return { features_plugins_enabled: true, plugins: [] } as T;
+    case "features_plugins_status":
+      return true as T;
     case "featured_list":
       return previewFeaturedPacks() as T;
     case "featured_refresh":
@@ -276,8 +328,51 @@ export const projectList = () =>
 export const pluginList = () =>
   invokeOrPreview<PluginEntry[]>("plugin_list");
 
+export const pluginOverview = () =>
+  invokeOrPreview<PluginOverview>("plugin_overview");
+
 export const pluginToggle = (key: string, enabled: boolean) =>
   invokeOrPreview<void>("plugin_toggle", { key, enabled });
+
+/** Install a plugin via the codex CLI. Returns the CLI stdout. */
+export const pluginAdd = (name: string, marketplace?: string) =>
+  invokeOrPreview<string>("plugin_add", { name, marketplace });
+
+/** Remove a plugin via the codex CLI. */
+export const pluginRemove = (key: string) =>
+  invokeOrPreview<string>("plugin_remove", { key });
+
+/** Master switch status for `[features]plugins`. */
+export const featuresPluginsStatus = () =>
+  invokeOrPreview<boolean>("features_plugins_status");
+
+/** Toggle `[features]plugins`. */
+export const featuresPluginsToggle = (enabled: boolean) =>
+  invokeOrPreview<void>("features_plugins_toggle", { enabled });
+
+export const marketplaceList = () =>
+  invokeOrPreview<MarketplaceEntry[]>("marketplace_list");
+
+export const marketplaceAdd = (source: string) =>
+  invokeOrPreview<string>("marketplace_add", { source });
+
+export const marketplaceUpgrade = (name?: string) =>
+  invokeOrPreview<string>("marketplace_upgrade", { name });
+
+export const marketplaceRemove = (name: string) =>
+  invokeOrPreview<string>("marketplace_remove", { name });
+
+export const mcpList = () =>
+  invokeOrPreview<McpServerEntry[]>("mcp_list");
+
+export const mcpToggle = (name: string, enabled: boolean) =>
+  invokeOrPreview<void>("mcp_toggle", { name, enabled });
+
+export const mcpRemove = (name: string) =>
+  invokeOrPreview<void>("mcp_remove", { name });
+
+export const mcpAdd = (entry: McpAdd) =>
+  invokeOrPreview<void>("mcp_add", { entry });
 
 export const configGet = () =>
   invokeOrPreview<AppConfig>("config_get");

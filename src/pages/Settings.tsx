@@ -51,12 +51,14 @@ function Settings() {
 
   const chooseCodexConfigDir = async () => {
     // config.toml lives inside a directory; we let the user pick the dir and
-    // append the filename if they didn't select a file ending in .toml.
+    // append the filename using a forward slash so the path works on every
+    // platform (the backend normalises via PathBuf::join on read/write).
     const selected = await pickDirectory();
     if (selected && config) {
-      const path = selected.toLowerCase().endsWith(".toml")
-        ? selected
-        : `${selected}\\config.toml`;
+      const trimmed = selected.replace(/[\\/]+$/, "");
+      const path = trimmed.toLowerCase().endsWith(".toml")
+        ? trimmed
+        : `${trimmed}/config.toml`;
       setConfig({ ...config, codex_config_path: path });
     }
   };

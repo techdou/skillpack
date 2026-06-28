@@ -831,3 +831,262 @@ select {
   align-self: flex-end;
   margin-top: 4px;
 }
+
+/* ============================================================
+ * Codex extensions: plugins grid, detail, tabs, marketplaces, MCP
+ * ============================================================ */
+
+/* Master switch banner */
+.features-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--success-bg);
+  border: 1px solid var(--success);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.features-banner-off {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+}
+.features-banner-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.features-banner-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+.features-banner-sub {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.tab {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  padding: 8px 12px;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+.tab:hover {
+  color: var(--text);
+}
+.tab-active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+/* Plugin grid + cards */
+.plugin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.plugin-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  gap: 10px;
+}
+.plugin-card-body {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.plugin-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.plugin-version {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-control-hover);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.plugin-card-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.plugin-card-desc-muted {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.plugin-card-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.plugin-cat,
+.plugin-skills-count {
+  background: var(--bg-control-hover);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.plugin-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+/* Plugin detail panel */
+.plugin-detail {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 12px;
+}
+.plugin-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.plugin-detail-title {
+  font-weight: 600;
+  font-size: 15px;
+}
+.plugin-detail-section {
+  margin-top: 12px;
+}
+.plugin-detail-section-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.plugin-detail-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.plugin-detail-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.chip {
+  font-size: 11px;
+  background: var(--bg-control-hover);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--text-secondary);
+}
+.plugin-detail-skills {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.plugin-detail-skills li {
+  margin: 2px 0;
+}
+
+/* key/value rows (detail + reuse) */
+.kv {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kv-row {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+}
+.kv-row dt {
+  color: var(--text-muted);
+  width: 90px;
+  flex-shrink: 0;
+}
+.kv-row dd {
+  margin: 0;
+  color: var(--text);
+  word-break: break-all;
+}
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+
+/* Marketplace + MCP rows share this list layout */
+.mcp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mcp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.mcp-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.mcp-row-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+.mcp-row-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.mcp-row-path {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mcp-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
