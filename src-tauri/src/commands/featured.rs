@@ -144,12 +144,23 @@ pub fn featured_list() -> Result<Vec<FeaturedPack>, String> {
 /// Unlike `featured_list`, errors propagate to the caller — this is triggered
 /// by an explicit user action (the Refresh button), so the user should see
 /// "pull failed" rather than a silently stale grid. A failed refresh never
-/// deletes the existing cache.
+/// deletes the existing cache, and on failure we reset the working tree to
+/// `HEAD` so the next read sees a consistent state instead of a half-fetched
+/// repo.
 #[tauri::command]
 pub fn featured_refresh() -> Result<Vec<FeaturedPack>, String> {
     // Clone if missing, then pull to fast-forward.
     let cache = ensure_registry_cache()?;
-    crate::git::pull_repo(&cache)?;
+
+    // On pull failure, best-effort reset the working tree so we never leave a
+    // half-updated checkout for `featured_list` to read from. `git pull`
+    // (fetch + merge) only updates `refs/remotes/*` until the very end, but a
+    // checkout conflict or crash mid-merge can dirty the tree. We restore HEAD
+    // and trust the last-known-good manifest.
+    if let Err(pull_err) = crate::git::pull_repo(&cache) {
+        let _ = crate::git::reset_worktree(&cache);
+        return Err(pull_err);
+    }
 
     let packs = load_manifest(&cache)
         // A pull that landed a malformed manifest is still better than an empty
