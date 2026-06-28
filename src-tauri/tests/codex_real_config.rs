@@ -84,12 +84,12 @@ fn real_mcp_list_well_formed() {
     }
 }
 
-/// CLI resolution behaves correctly. This is an environment-dependent check:
-/// `codex` is only resolvable when it is on PATH or `CODEX_CLI_PATH` is set.
-/// We assert the documented behaviour rather than a specific install location:
+/// CLI resolution behaves correctly across all three discovery strategies.
+/// This is an environment-dependent check, so we assert documented behaviour
+/// rather than a specific install location:
 ///   - if `CODEX_CLI_PATH` is set, it must be honoured verbatim;
-///   - otherwise resolution may legitimately fail (codex not on PATH), which
-///     we report as a diagnostic, not a failure.
+///   - otherwise resolution may succeed via PATH or known install locations,
+///     or legitimately fail (no Codex installed); the diagnostic reports which.
 #[test]
 #[ignore]
 fn real_cli_resolves_or_reports_absence() {
@@ -103,10 +103,22 @@ fn real_cli_resolves_or_reports_absence() {
         }
     }
     match codex::cli::resolve_codex_cli() {
-        Ok(path) => eprintln!("codex CLI (via PATH): {}", path),
+        Ok(path) => {
+            // Report which known root matched, so we can tell PATH vs
+            // auto-discovery apart. A path containing "Codex/bin" under
+            // LOCALAPPDATA means the known-location fallback fired.
+            let via = if path.contains("OpenAI")
+                && path.contains("Codex")
+                && path.contains("bin")
+            {
+                "known install location"
+            } else {
+                "PATH"
+            };
+            eprintln!("codex CLI (via {}): {}", via, path);
+        }
         Err(e) => eprintln!(
-            "codex not on PATH (ok on dev machines without it): {} \n\
-             set CODEX_CLI_PATH to point at codex.exe to exercise install/uninstall commands",
+            "codex not found (ok on machines without it): {}",
             e
         ),
     }

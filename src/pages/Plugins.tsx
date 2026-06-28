@@ -58,6 +58,17 @@ function Plugins() {
   const enabledCount = plugins.filter((p) => p.enabled).length;
   const openPlugin = plugins.find((p) => p.key === openKey) ?? null;
 
+  // Surface the load error for whichever tab the user is looking at, plus any
+  // action error. Without this a failed marketplace/mcp load showed only an
+  // empty list with no explanation.
+  const tabError =
+    tab === "installed"
+      ? overview.error
+      : tab === "marketplaces"
+        ? marketplaces.error
+        : servers.error;
+  const visibleError = actionError ?? tabError;
+
   return (
     <div>
       <div className="page-title">Codex Extensions</div>
@@ -65,7 +76,7 @@ function Plugins() {
         Manage Codex plugins, marketplaces, and MCP servers in config.toml
       </div>
 
-      <ErrorBanner error={overview.error ?? actionError} />
+      <ErrorBanner error={visibleError} />
       <SuccessBanner message={success} onDismiss={() => setSuccess(null)} />
 
       {/* Master switch banner */}

@@ -27,22 +27,28 @@ pub struct CliOutput {
 /// Strategy, in order:
 /// 1. `CODEX_CLI_PATH` env var (explicit override, useful for tests).
 /// 2. `codex` on `PATH` (the normal case once Codex is installed).
+/// 3. Known install locations on Windows (`%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe`)
+///    and macOS/Linux (`~/.codex/bin/codex`) when Codex is installed but not on PATH.
 ///
 /// Returns an error naming what was tried so the UI can guide the user to
 /// install Codex or set the env var.
 pub fn resolve_codex_cli() -> Result<String, SkillError> {
+    // 1. Explicit override.
     if let Ok(path) = std::env::var("CODEX_CLI_PATH") {
         if !path.is_empty() {
             return Ok(path);
         }
     }
-    // `codex` is expected on PATH on all platforms. `which` is not available in
-    // the std; rely on the shell/OS resolver used by Command::new.
+    // 2. On PATH.
     if which_on_path("codex") {
         return Ok("codex".into());
     }
+    // 3. Known install locations for when Codex is installed but not on PATH.
+    if let Some(found) = find_in_known_locations() {
+        return Ok(found.to_string_lossy().to_string());
+    }
     Err(SkillError::NotFound(
-        "codex CLI on PATH (set CODEX_CLI_PATH to point at it explicitly)".into(),
+        "codex CLI not found on PATH, in known install locations, or via CODEX_CLI_PATH".into(),
     ))
 }
 
@@ -66,11 +72,83 @@ fn which_on_path(program: &str) -> bool {
     false
 }
 
+/// Look for the codex binary in well-known install roots that are not on PATH.
+///
+/// Codex's own installers place the binary under a hashed version directory,
+/// e.g. `%LOCALAPPDATA%\OpenAI\Codex\bin\<hash>\codex.exe`. We glob the `bin`
+/// directory and pick the newest `codex.exe` by modification time. On Unix we
+/// also check `~/.codex/bin/codex` and `~/.local/bin/codex`.
+fn find_in_known_locations() -> Option<std::path::PathBuf> {
+    let candidates: Vec<std::path::PathBuf> = if cfg!(windows) {
+        // %LOCALAPPDATA%\OpenAI\Codex\bin\<hash>\codex.exe
+        let local = dirs::data_local_dir()?;
+        vec![local.join("OpenAI").join("Codex").join("bin")]
+    } else {
+        let home = dirs::home_dir()?;
+        vec![
+            home.join(".codex").join("bin"),
+            home.join(".local").join("bin"),
+        ]
+    };
+
+    for root in candidates {
+        if let Some(found) = find_codex_under(&root) {
+            return Some(found);
+        }
+    }
+    None
+}
+
+/// Search `root` (and, on Windows, one level of hashed subdirectories) for the
+/// newest `codex`/`codex.exe` by mtime.
+fn find_codex_under(root: &std::path::Path) -> Option<std::path::PathBuf> {
+    let exe_ext = if cfg!(windows) { ".exe" } else { "" };
+    let target = format!("codex{}", exe_ext);
+
+    // Direct match: root/codex(.exe)
+    let direct = root.join(&target);
+    if direct.is_file() {
+        return Some(direct);
+    }
+
+    // Windows: Codex nests under versioned dirs: root/<hash>/codex.exe.
+    // Collect all matches and pick the most recently modified one so an
+    // auto-update lands on the newest version deterministically.
+    let entries = std::fs::read_dir(root).ok()?;
+    let mut best: Option<(std::time::SystemTime, std::path::PathBuf)> = None;
+    for entry in entries.flatten() {
+        // Recurse one level into subdirectories (the hashed version dirs).
+        let path = entry.path();
+        let search_dirs: Vec<std::path::PathBuf> = if path.is_dir() {
+            vec![path.clone()]
+        } else {
+            continue;
+        };
+        for dir in search_dirs {
+            let candidate = dir.join(&target);
+            if !candidate.is_file() {
+                continue;
+            }
+            let mtime = std::fs::metadata(&candidate)
+                .and_then(|m| m.modified())
+                .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+            match &best {
+                Some((cur, _)) if *cur >= mtime => {}
+                _ => best = Some((mtime, candidate)),
+            }
+        }
+    }
+    best.map(|(_, p)| p)
+}
+
 /// Run `codex <args..>` and capture output. Errors carry stderr.
+///
+/// On timeout we kill the child **and wait for it to exit** so the OS reaps
+/// the process and we don't leak a zombie or an orphaned codex subprocess.
 pub fn run(args: &[&str]) -> Result<CliOutput, SkillError> {
     let codex = resolve_codex_cli()?;
     // Spawn with a child we can poll, so we can enforce a timeout without an
-    // extra crate. We use a simple thread + try_wait loop.
+    // extra crate. We use a simple try_wait loop.
     let mut cmd = Command::new(&codex);
     cmd.args(args);
     let mut child = cmd
@@ -101,7 +179,10 @@ pub fn run(args: &[&str]) -> Result<CliOutput, SkillError> {
             }
             Ok(None) => {
                 if start.elapsed() > CLI_TIMEOUT {
+                    // Kill then reap: an un-reaped killed child becomes a
+                    // zombie on Unix and may hold stdout/stderr pipes open.
                     let _ = child.kill();
+                    let _ = child.wait();
                     return Err(SkillError::Other(format!(
                         "codex {} timed out after {:?}",
                         args.join(" "),
@@ -184,5 +265,63 @@ mod tests {
             (_, p) => p.to_string(),
         };
         assert_eq!(with_mkt, "vercel@openai-curated");
+    }
+
+    #[test]
+    fn find_codex_under_direct_match() {
+        // A direct root/codex(.exe) should be found without subdirectories.
+        let tmp = std::env::temp_dir().join(format!(
+            "codex-find-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&tmp).unwrap();
+        let exe_ext = if cfg!(windows) { ".exe" } else { "" };
+        let bin = tmp.join(format!("codex{}", exe_ext));
+        std::fs::write(&bin, b"fake").unwrap();
+
+        let found = find_codex_under(&tmp).unwrap();
+        assert_eq!(found, bin);
+
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn find_codex_under_picks_newest_in_subdir() {
+        // Windows layout: root/<hash>/codex.exe. We create two versioned dirs
+        // and verify the newer one (by mtime) is selected.
+        let tmp = std::env::temp_dir().join(format!(
+            "codex-find-newest-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let old = tmp.join("aaaa1111");
+        let new = tmp.join("bbbb2222");
+        std::fs::create_dir_all(&old).unwrap();
+        std::fs::create_dir_all(&new).unwrap();
+        let exe_ext = if cfg!(windows) { ".exe" } else { "" };
+        std::fs::write(old.join(format!("codex{}", exe_ext)), b"old").unwrap();
+        // Sleep briefly so the "new" file has a strictly later mtime.
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        let new_bin = new.join(format!("codex{}", exe_ext));
+        std::fs::write(&new_bin, b"new").unwrap();
+
+        let found = find_codex_under(&tmp).unwrap();
+        assert_eq!(found, new_bin);
+
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn find_codex_under_returns_none_when_empty() {
+        let tmp = std::env::temp_dir().join("codex-find-empty-12345");
+        let _ = std::fs::remove_dir_all(&tmp);
+        std::fs::create_dir_all(&tmp).unwrap();
+        assert!(find_codex_under(&tmp).is_none());
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 }

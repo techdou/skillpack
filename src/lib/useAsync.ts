@@ -6,8 +6,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *
  * Runs `fn` on mount (and whenever `deps` change), tracks `data`/`error`/
  * `loading`, and exposes `reload()` to re-run on demand (e.g. after a
- * mutation). `deps` must mirror every value `fn` closes over, just like
- * `useEffect` deps.
+ * mutation).
+ *
+ * `fn` is captured by ref, so callers may pass an inline closure without
+ * worrying that `reload` will call a stale copy — the latest `fn` always runs.
+ * `deps` controls *when* the hook re-runs on mount/update (mirroring
+ * `useEffect` deps), not which `fn` is invoked.
  *
  * Returned functions are stable across renders unless `deps` change, so they
  * are safe to pass as props.
@@ -25,6 +29,12 @@ export function useAsync<T>(
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Keep the latest fn in a ref so reload always invokes the current closure,
+  // even if the caller passes an inline arrowhead that changes each render.
+  // Without this, a stale fn would be captured by the memoised reload.
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+
   // Prevent setting state after unmount, and allow callers to invalidate the
   // last request by capturing a per-run token.
   const tokenRef = useRef(0);
@@ -41,7 +51,7 @@ export function useAsync<T>(
     const token = ++tokenRef.current;
     setLoading(true);
     try {
-      const result = await fn();
+      const result = await fnRef.current();
       if (token === tokenRef.current && mountedRef.current) {
         setData(result);
         setError(null);
@@ -55,12 +65,12 @@ export function useAsync<T>(
         setLoading(false);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, []);
 
   useEffect(() => {
     reload();
-  }, [reload]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 
   return { data, error, loading, reload };
 }
